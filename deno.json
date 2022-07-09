@@ -30,6 +30,7 @@
   "tasks": {
     "format": "deno fmt",
     "run": "deno run --allow-read ./src/mod.ts",
+    "run:args": "deno run --allow-read ./src/mod.ts --selector data-test-id",
     "lint": "deno lint"
   }
 }

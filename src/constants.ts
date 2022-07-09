@@ -1,3 +1,4 @@
-const TS_OR_TSX = /[\.ts|\.tsx]$/gi;
+const SOURCE_CODE = /\.tsx?/gi;
+const DEFAULT_PATTERN = "data-test-id";
 
-export { TS_OR_TSX };
+export { SOURCE_CODE, DEFAULT_PATTERN };

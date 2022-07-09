@@ -1,39 +1,44 @@
-import { TS_OR_TSX } from "./constants.ts";
+import type { Selector } from "./types.ts";
+import * as utils from "./utils.ts";
+import * as assert from "./assert.ts";
 
-function isSourceCode(file: Deno.DirEntry) {
-  return !TS_OR_TSX.test(file.name);
-}
+const PATH = await Deno.realPath("./");
 
-async function readFile(filePath: string) {
-  const decoder = new TextDecoder("utf-8");
-  const data = await Deno.readFile(filePath);
-  return decoder.decode(data);
-}
+function getReader(selectorName: string) {
+  const pattern = utils.regexpFrom(selectorName);
 
-async function readSelectors(root: string, selectors: string[]): Promise<string[]> {
-  const nextDirContent = [];
-  const directoryFiles = await Deno.readDir(root);
+  return async function* traverse(cwd: string): AsyncGenerator<Selector[]> {
+    const directoryFiles = await Deno.readDir(cwd);
 
-  for await (const file of directoryFiles) {
-    const filePath = `${root}/${file.name}`;
+    for await (const file of directoryFiles) {
+      const filePath = `${cwd}/${file.name}`;
 
-    if (file.isDirectory) {
-      if (file.name.startsWith(".")) continue;
+      if (file.isDirectory) {
+        if (assert.isHiddenFile(file)) {
+          console.log("skipping hidden directory:", file.name);
+          continue;
+        }
 
-      nextDirContent.push(readSelectors(filePath, selectors));
-    } else {
-      if (!isSourceCode(file)) continue;
+        yield* traverse(filePath);
+      } else {
+        if (!assert.isSourceCode(file)) {
+          console.log("skipping non-source file:", file.name);
+          continue;
+        }
 
-      const fileContent = await readFile(filePath);
-      selectors.push(fileContent);
+        const cypressSelectors = await utils.getSelectors(filePath, selectorName, pattern);
+
+        if (cypressSelectors !== null) {
+          yield cypressSelectors;
+        }
+      }
     }
-  }
-
-  const directoryMatches = await (await Promise.all(nextDirContent)).flat();
-  return selectors.concat(...directoryMatches);
+  };
 }
 
-const cwd = await Deno.realPath("./");
-const source = await readSelectors(cwd, []);
+const selectorName = utils.readSelectorName(Deno.args);
+const readSelectors = getReader(selectorName);
 
-console.log("source", JSON.stringify(source, null, 2));
+for await (const selectors of readSelectors(PATH)) {
+  console.log(selectors);
+}

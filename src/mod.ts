@@ -1,6 +1,7 @@
 import type { Selector } from "./types.ts";
 import * as utils from "./utils.ts";
 import * as assert from "./assert.ts";
+import * as ast from "./ast.ts";
 
 const PATH = await Deno.realPath("./");
 
@@ -25,6 +26,12 @@ function getReader(selectorName: string) {
           console.log("skipping non-source file:", file.name);
           continue;
         }
+
+        const fileContent = await utils.readFile(filePath);
+        const sourceAst = ast.parseSource(fileContent);
+
+        console.log("AST :: \n", JSON.stringify(sourceAst, null, 2));
+        // TODO: extract `JSXAttribute`s from sourceAst
 
         const cypressSelectors = await utils.getSelectors(filePath, selectorName, pattern);
 

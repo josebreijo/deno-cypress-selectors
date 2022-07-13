@@ -1,5 +1,6 @@
+// TODO: extract to deps.ts file
 import { parse } from "https://deno.land/std/flags/mod.ts";
-import type { Selector } from "./types.ts";
+
 import * as constants from "./constants.ts";
 
 function regexpFrom(pattern: string = constants.DEFAULT_PATTERN) {
